@@ -38,7 +38,7 @@ async function newBrowser(proxyUrl) {
             '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',],
         // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', 
         executablePath: '/opt/homebrew/bin/chromium',
-        headless: false, timeout: 0,
+        headless: true, timeout: 0,
         waitForInitialPage: true,
         defaultViewport:{width:800+Math.round(Math.random()*100),height:600+Math.round(Math.random()*100),isMobile:true},
     });
@@ -84,7 +84,10 @@ function createAccount(username?, p?): Promise<void | null | { success: boolean,
             await page.type('#passwordConfirm', p)
 
 
+            let total = 0
             while (true) { // loop in case username exists
+                if(total>10) {res(); return;}
+                total++;
                 console.log('creating new username')
                 if (generate) {
                     console.log('yes making new')
@@ -269,7 +272,7 @@ function storeDeets(u: string, p: string) {
 let pr = new Rotator();
 
 
-const INTERVAL = 1000 * 15;
+const INTERVAL = 1000 * 8;
 const MAX_ERRORS = 5;
 const MAX_GOOGLE_KNOWS = 3;
 async function go() {
@@ -282,9 +285,11 @@ async function go() {
             // await newBrowser('socks5://45.77.222.98:10312')
             await newBrowser(await pr.getCurrentProxyUrl())
 
-            let answer = await createAccountAndStoreCredentials();
-            if (answer?.success) {
-                console.log('IT WAS A SUCCESS!')
+            // let answer = await createAccountAndStoreCredentials();
+            // if (answer?.success) {
+            if(true) {
+                // console.log('IT WAS A SUCCESS!')
+                console.log('starting up the factory!')
 
                 let errorCount = 0;
                 let callitoff = false;
