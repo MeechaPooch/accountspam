@@ -356,10 +356,12 @@ async function doItWithProxy(proxyUrl) {
         totalNumberOfBrowsersOpen--;
         browser.close();
         return;
-    }
-    totalNumberOfBrowsersOpen--;
+    } finally {
+        totalNumberOfBrowsersOpen--;
 
-    browser.close();
+        browser.close();
+    }
+   
 
 }
 
