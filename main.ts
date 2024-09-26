@@ -54,7 +54,7 @@ async function getUsernames() {
     return usernames.split('\n')
 }
 import { sleep } from './utils'
-function createAccount(browser: Browser, username?, p?): Promise<void | null | { success: boolean, username: string, password: string, info?: string }> {
+function createAccount(browser: Browser, username?, p?): Promise<void | null | { success?: boolean, username?: string, password?: string, info?: string, error?:any, }> {
     let inputtedUsername = username;
     let generate = false;
     if (!username) generate = true
@@ -62,7 +62,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
     return new Promise(async res => {
 
         try {
-            browser.on('close', () => { res({message:'browser closed'}) })
+            browser.on('close', () => { res({info:'browser closed'}) })
 
             // let page = (await browser.pages())[0]
             let page = await browser.newPage()
@@ -89,7 +89,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
             let total = 0
             while (true) { // loop in case username exists
-                if (total > 10) { res({error:'username recreate loop'}); return; }
+                if (total > 10) { res({info:'username recreate loop'}); return; }
                 total++;
                 console.log('creating new username')
                 if (generate) {
@@ -242,7 +242,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                      }
                 })())])
 
-            res({error:'timed out waiting for captcha to appear and solve'});
+            res({info:'timed out waiting for captcha to appear and solve'});
         } catch (e) {
             // console.error(e);
             res({error:e});
@@ -255,6 +255,7 @@ async function createAccountAndStoreCredentials(browser, username?, p?) {
     console.log('result was:', res)
     if (res?.success) {
         totalCreated++;
+        if(!res.username || !res.password) return;
         await storeDeets(res.username, res.password)
     }
     console.log('total created:',totalCreated)
@@ -393,5 +394,33 @@ process.on('uncaughtException', function (err) {
     console.error(err);
     // console.log("Node NOT Exiting...");
 });
+
+process.stdin.resume(); // so the program will not close instantly
+
+
+import {spawn} from 'child_process'
+async function exitHandler(options, exitCode) {
+    if (options.cleanup) {
+        console.log('killing chromium instances and waiting 5 seconds...');
+        spawn('pkill chromium');
+        await sleep(1000 * 5);
+        console.log('done waiting')
+    }
+    
+    if (exitCode || exitCode === 0) console.log(exitCode);
+    if (options.exit) process.exit();
+}
+
+// do something when app is closing
+process.on('exit', exitHandler.bind(null,{cleanup:true}));
+
+// catches ctrl+c event
+process.on('SIGINT', exitHandler.bind(null, {exit:true, cleanup:true}));
+
+// catches "kill pid" (for example: nodemon restart)
+process.on('SIGUSR1', exitHandler.bind(null, {exit:true, cleanup:true}));
+process.on('SIGUSR2', exitHandler.bind(null, {exit:true, cleanup:true}));
+
+// catches uncaught exceptions
 
 go();
