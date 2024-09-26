@@ -1,0 +1,1 @@
+export const scratchcsrftoken = 'mnXVnR5X1JlMy96DDfyDcN5FuQnRnDQ'

@@ -49,8 +49,7 @@ async function getUsernames() {
     let usernames = (await fs.readFile('usernames.txt')).toString();
     return usernames.split('\n')
 }
-export function sleep(m) { return new Promise(r => setTimeout(r, m)) }
-
+import {sleep} from './utils'
 function createAccount(username?, p?): Promise<void | null | { success: boolean, username: string, password: string,info?:string }> {
     let inputtedUsername = username;
     let generate = false;
@@ -270,7 +269,6 @@ function storeDeets(u: string, p: string) {
 
 
 let pr = new Rotator();
-
 
 const INTERVAL = 1000 * 8;
 const MAX_ERRORS = 5;

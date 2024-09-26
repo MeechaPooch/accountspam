@@ -1,7 +1,7 @@
 import { testProxy, verifyProxy } from "./verifyProxy";
 import { getProxyList } from './getProxyList.ts'
 import { getProxies } from './getProxyListOriginal.ts'
-import { sleep } from "./main.ts";
+import { sleep } from "./utils.ts";
 
 let DEBUG = false;
 let INTERVAL = 50; //millis
@@ -10,7 +10,15 @@ function debug(...strings) {
     if (DEBUG) console.log(...strings)
 }
 
+
 export default class Rotator {
+
+    private static mainRotator: Rotator;
+
+    public static getMainRotator() {
+        if (this.mainRotator) return this.mainRotator;
+        else return new Rotator();
+    }
 
     private proxies: string[] = [];
     private currentIndex = 0;
@@ -22,6 +30,8 @@ export default class Rotator {
             this.refreshPromise = null
         }
         );
+
+        Rotator.mainRotator = this;
     };
 
     async getCurrentProxyUrl() {
