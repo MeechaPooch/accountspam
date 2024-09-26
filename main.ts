@@ -1,3 +1,5 @@
+console.log('test')
+
 let totalCreated = 0;
 
 import puppeteer from 'puppeteer-extra'
@@ -39,7 +41,7 @@ async function newBrowser(proxyUrl) {
             '--disable-features=IsolateOrigins,site-per-process,SitePerProcess',
             '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',],
         // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', 
-        executablePath: '/opt/homebrew/bin/chromium',
+        executablePath: '/usr/bin/chromium',
         headless: true, timeout: 0,
         waitForInitialPage: true,
         defaultViewport: { width: 800 + Math.round(Math.random() * 100), height: 600 + Math.round(Math.random() * 100), isMobile: true },
@@ -60,7 +62,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
     return new Promise(async res => {
 
         try {
-            browser.on('close', () => { res() })
+            browser.on('close', () => { res({message:'browser closed'}) })
 
             // let page = (await browser.pages())[0]
             let page = await browser.newPage()
@@ -87,7 +89,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
             let total = 0
             while (true) { // loop in case username exists
-                if (total > 10) { res(); return; }
+                if (total > 10) { res({error:'username recreate loop'}); return; }
                 total++;
                 console.log('creating new username')
                 if (generate) {
@@ -240,10 +242,10 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                      }
                 })())])
 
-            res();
+            res({error:'timed out waiting for captcha to appear and solve'});
         } catch (e) {
             // console.error(e);
-            res();
+            res({error:e});
         }
     })
 }
@@ -352,7 +354,7 @@ async function doItWithProxy(proxyUrl) {
 
     } catch (e) {
         console.log('ERROR')
-        // console.error(e)
+        console.error(e)
         totalNumberOfBrowsersOpen--;
         browser.close();
         return;
@@ -365,7 +367,7 @@ async function doItWithProxy(proxyUrl) {
 
 }
 
-const TOTAL_BROWSERS_AT_ONCE = 10;
+const TOTAL_BROWSERS_AT_ONCE = 4;
 let totalNumberOfBrowsersOpen = 0;
 async function go() {
 
@@ -388,8 +390,8 @@ async function go() {
 }
 
 process.on('uncaughtException', function (err) {
-    // console.error(err);
+    console.error(err);
     // console.log("Node NOT Exiting...");
 });
 
-go()
+go();

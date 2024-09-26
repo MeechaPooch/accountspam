@@ -35,6 +35,7 @@ export default class Rotator {
     };
 
     async getCurrentProxyUrl() {
+        console.log('getting')
         if (this.refreshPromise) await this.refreshPromise;
 
         return this.proxies[this.currentIndex]

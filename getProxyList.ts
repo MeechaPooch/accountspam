@@ -14,6 +14,8 @@ export async function getProxyList(): Promise<string[]> {
 
 }
 
+console.log(await getProxyList())
+
 export function getProxyList1(): Promise<string[]> {
     let ip_addresses: string[] = [];
     let port_numbers: string[] = [];
