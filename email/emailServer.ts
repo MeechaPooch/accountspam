@@ -140,8 +140,8 @@ async function verifyLink(link) {
   const agent = torAgent;
   // const agent = new HttpProxyAgent(await Rotator.getMainRotator().getCurrentProxyUrl());
   let res = await fetch(link, { agent });
-  console.log('ok', res.ok)
-  console.log(res)
+  // console.log('email req:', res.ok)
+  // console.log(res)
   return { ok: res.ok };
 }
 
@@ -167,8 +167,9 @@ async function isIdSuccess(id) {
       return false;
     }
   } catch (e) { 
-    console.error(e)
-    return false }
+    // console.error(e)
+    return false
+   }
 }
 
 
@@ -185,7 +186,7 @@ async function clickEmail(emailTextContent) {
   const matches = emailTextContent.match(pattern);
   if (!matches || !matches.length) return { ok: true };
   const link = matches[0]
-  console.log(link)
+  // console.log(link)
 
   if (!link) return { ok: true };
 
@@ -203,14 +204,14 @@ export async function emailLoop() {
   while (true) {
     await sleep(1000 * 5)
 
-    console.log('listing')
+    // console.log('listing')
     let email = await listEmail()!;
     if (!email) continue;
-    console.log('email list. length:', email.length)
+    // console.log('email list. length:', email.length)
     email = email.filter(e => !alreadyRecorded.includes(e.id));
-    console.log('email list minus already clicked. length:', email.length)
+    // console.log('email list minus already clicked. length:', email.length)
     for (let e of email) {
-      console.log('handling email', e.id)
+      // console.log('handling email', e.id)
       if (await isIdSuccess(e.id)) {
         alreadyRecorded.push(e.id)
         continue;
@@ -223,7 +224,7 @@ export async function emailLoop() {
 
       let ok = (await clickEmail(stringContent)).ok;
 
-      console.log('success:', ok)
+      console.log('email success:', ok)
 
       recordId(e.id, ok);
 

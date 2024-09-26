@@ -1,3 +1,5 @@
+let totalCreated = 0;
+
 import puppeteer from 'puppeteer-extra'
 import userAgent from 'user-agents'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -10,7 +12,7 @@ import Rotator from './ProxyRotater';
 let usernames = await getUsernames()
 
 import {
-  proxyRequest,
+    proxyRequest,
 } from 'puppeteer-proxy';
 
 
@@ -23,9 +25,9 @@ const args = {
 }
 
 
-let browser: Browser;
+
 async function newBrowser(proxyUrl) {
-    browser = await puppeteer.launch({
+    return await puppeteer.launch({
         args: [
             `--proxy-server=${proxyUrl}`,
             // '--proxy-server=socks5://127.0.0.1:9050',
@@ -40,7 +42,7 @@ async function newBrowser(proxyUrl) {
         executablePath: '/opt/homebrew/bin/chromium',
         headless: true, timeout: 0,
         waitForInitialPage: true,
-        defaultViewport:{width:800+Math.round(Math.random()*100),height:600+Math.round(Math.random()*100),isMobile:true},
+        defaultViewport: { width: 800 + Math.round(Math.random() * 100), height: 600 + Math.round(Math.random() * 100), isMobile: true },
     });
 
 }
@@ -49,8 +51,8 @@ async function getUsernames() {
     let usernames = (await fs.readFile('usernames.txt')).toString();
     return usernames.split('\n')
 }
-import {sleep} from './utils'
-function createAccount(username?, p?): Promise<void | null | { success: boolean, username: string, password: string,info?:string }> {
+import { sleep } from './utils'
+function createAccount(browser: Browser, username?, p?): Promise<void | null | { success: boolean, username: string, password: string, info?: string }> {
     let inputtedUsername = username;
     let generate = false;
     if (!username) generate = true
@@ -85,7 +87,7 @@ function createAccount(username?, p?): Promise<void | null | { success: boolean,
 
             let total = 0
             while (true) { // loop in case username exists
-                if(total>10) {res(); return;}
+                if (total > 10) { res(); return; }
                 total++;
                 console.log('creating new username')
                 if (generate) {
@@ -135,7 +137,7 @@ function createAccount(username?, p?): Promise<void | null | { success: boolean,
 
             page.waitForSelector('.registration-error-msg', { timeout: 1000 * 600 }).then((err) => {
                 // console.log('GOOGLE error message!!!')
-                res({ success: false, username:inputtedUsername, password: p, info:'captchaload'});
+                res({ success: false, username: inputtedUsername, password: p, info: 'captchaload' });
             })
 
             await page.waitForSelector('#email')
@@ -143,7 +145,7 @@ function createAccount(username?, p?): Promise<void | null | { success: boolean,
 
             await sleep(100)
             await page.waitForSelector('[type="submit"][content="Create Your Account"]:has(.next-step-title)')
-            console.log('found')
+            // console.log('found')
             await page.click('[type="submit"]');
 
             await Promise.all([(
@@ -154,18 +156,20 @@ function createAccount(username?, p?): Promise<void | null | { success: boolean,
                 (async () => {
                     try {
                         await page.waitForSelector('iframe[title="recaptcha challenge expires in two minutes"]');
-                        console.log('found iframe')
+                        // console.log('found iframe')
                         let title = await page.evaluate(() => { return (document.querySelector('iframe[title="recaptcha challenge expires in two minutes"]') as HTMLIFrameElement)?.title }) as string;
                         console.log('title', title)
                         let frames = await page.frames();
                         // console.log(frames.length, await Promise.all(frames.map(frame => frame)));
 
-                        {(async()=>{
-                            // blocks until element shows up
-                            let item = await (await (await page.waitForSelector('iframe[src*="api2/bframe"]'))?.contentFrame())?.waitForSelector('.rc-doscaptcha-body-text');
-                            // when error element shows up, say so
-                            res({success:false,username:inputtedUsername,password:p,info:'googleknows'})
-                        })();}
+                        {
+                            (async () => {
+                                // blocks until element shows up
+                                let item = await (await (await page.waitForSelector('iframe[src*="api2/bframe"]'))?.contentFrame())?.waitForSelector('.rc-doscaptcha-body-text');
+                                // when error element shows up, say so
+                                res({ success: false, username: inputtedUsername, password: p, info: 'googleknows' })
+                            })();
+                        }
 
                         // page.evaluate(() => {
                         //     return new Promise(async res => {
@@ -231,23 +235,27 @@ function createAccount(username?, p?): Promise<void | null | { success: boolean,
                         //     }
                         // }
 
-                    } catch (e) { console.error(e) }
+                    } catch (e) { 
+                        // console.error(e)
+                     }
                 })())])
 
             res();
         } catch (e) {
-            console.error(e);
+            // console.error(e);
             res();
         }
     })
 }
 
-async function createAccountAndStoreCredentials(username?, p?) {
-    let res = await createAccount(username, p);
+async function createAccountAndStoreCredentials(browser, username?, p?) {
+    let res = await createAccount(browser, username, p);
     console.log('result was:', res)
     if (res?.success) {
+        totalCreated++;
         await storeDeets(res.username, res.password)
     }
+    console.log('total created:',totalCreated)
     return res;
 
 }
@@ -266,76 +274,120 @@ function storeDeets(u: string, p: string) {
 // createAccount(username, password)
 // page.do('create an account') // does it conciously the first time, then saves steps to quickly reproduce.
 // app with interface where people can select folders to pull from and then ask the ai to complete a certain task
-
+import { emailLoop } from './email/emailServer.ts'
+async function startEmailResponding() {
+    emailLoop();
+}
 
 let pr = new Rotator();
 
 const INTERVAL = 1000 * 8;
-const MAX_ERRORS = 5;
-const MAX_GOOGLE_KNOWS = 3;
+const MAX_ERRORS_IN_ROW_NON_GOOGLE = 5;
+const MAX_GOOGLE_KNOWS_IN_ROW = 3;
+
+async function doCreates(browser: Browser) {
+
+    // let answer = await createAccountAndStoreCredentials();
+    // if (answer?.success) {
+    if (true) {
+        // console.log('IT WAS A SUCCESS!')
+        console.log('starting up the factory!')
+
+        let errorCount = 0;
+        let errorCountInRowNonGoogle = 2;
+        let callitoff = false;
+        let googleKnowsInRow = 0;
+        while (true) {
+            if (callitoff || errorCountInRowNonGoogle > MAX_ERRORS_IN_ROW_NON_GOOGLE || googleKnowsInRow >= MAX_GOOGLE_KNOWS_IN_ROW) break;
+            await sleep(INTERVAL);
+            console.log('sleep over')
+            if (callitoff || errorCountInRowNonGoogle > MAX_ERRORS_IN_ROW_NON_GOOGLE || googleKnowsInRow >= MAX_GOOGLE_KNOWS_IN_ROW) break;
+
+            {
+                (async () => {
+                    try {
+                        let resp = await createAccountAndStoreCredentials(browser);
+                        if (resp?.success) {
+                            googleKnowsInRow = 0;
+                            errorCountInRowNonGoogle = 0;
+                        } else {
+                            if (resp?.info == 'googleknows') {
+                                googleKnowsInRow++;
+                                errorCountInRowNonGoogle++;
+                            } else if (resp?.info == 'captchaload') {
+                                callitoff = true;
+                                errorCountInRowNonGoogle++;
+                            } else {
+                                // callitoff = true;
+                                errorCountInRowNonGoogle++;
+                            }
+                            errorCount++;
+                        }
+
+                    } catch (e) {
+                        errorCount++;
+                        // callitoff = true;
+                    }
+                })()
+            }
+
+        }
+        console.log('loop broken')
+
+    } // make more. until not success
+}
+
+async function doItWithProxy(proxyUrl) {
+    let browser;
+    try {
+        // await newBrowser('http://assortedgummies.uk.to:6969')
+        // await newBrowser('http://173.249.60.246:14344')
+        // await newBrowser('http://152.53.19.8:3128')
+        // await newBrowser('socks5://45.77.222.98:10312')
+        totalNumberOfBrowsersOpen++;
+
+        browser = await newBrowser(proxyUrl);
+        await doCreates(browser)
+        console.log('DONE')
+
+    } catch (e) {
+        console.log('ERROR')
+        // console.error(e)
+        totalNumberOfBrowsersOpen--;
+        browser.close();
+        return;
+    }
+    totalNumberOfBrowsersOpen--;
+
+    browser.close();
+
+}
+
+const TOTAL_BROWSERS_AT_ONCE = 10;
+let totalNumberOfBrowsersOpen = 0;
 async function go() {
 
     while (true) {
-        try {
-            // await newBrowser('http://assortedgummies.uk.to:6969')
-            // await newBrowser('http://173.249.60.246:14344')
-            // await newBrowser('http://152.53.19.8:3128')
-            // await newBrowser('socks5://45.77.222.98:10312')
-            await newBrowser(await pr.getCurrentProxyUrl())
+        console.log('waiting', totalNumberOfBrowsersOpen)
 
-            // let answer = await createAccountAndStoreCredentials();
-            // if (answer?.success) {
-            if(true) {
-                // console.log('IT WAS A SUCCESS!')
-                console.log('starting up the factory!')
+        while(totalNumberOfBrowsersOpen>=TOTAL_BROWSERS_AT_ONCE) {await sleep(1000)}
 
-                let errorCount = 0;
-                let callitoff = false;
-                let googleknows = 0;
-                while (true) {
-                    if (callitoff || errorCount > MAX_ERRORS || googleknows > MAX_GOOGLE_KNOWS) break;
-                    await sleep(INTERVAL);
-                    if (callitoff || errorCount > MAX_ERRORS || googleknows > MAX_GOOGLE_KNOWS) break;
+        console.log('starting up', totalNumberOfBrowsersOpen)
 
-                    {
-                        (async () => {
-                            try {
-                                let resp = await createAccountAndStoreCredentials();
-                                if (!resp?.success) {
-                                    if(resp?.info=='googleknows') {
-                                        googleknows++;
-                                    } else if(resp?.info=='captchaload') {
-                                        callitoff = true;
-                                    } else {
-                                        callitoff = true;
-                                    }
-                                    errorCount++;
-                                }
-                            } catch (e) {
-                                errorCount++;
-                                // callitoff = true;
-                            }
-                        })()
-                    }
-
-                }
-
-            } // make more. until not success
-        } catch (e) {
-            console.error(e)
-            browser.close();
-        }
-        browser.close();
+        doItWithProxy(await pr.getCurrentProxyUrl())
 
         await pr.rotate()
 
         await sleep(1000);
     }
+
+
+
 }
 
 process.on('uncaughtException', function (err) {
-    console.error(err);
-    console.log("Node NOT Exiting...");
+    // console.error(err);
+    // console.log("Node NOT Exiting...");
 });
 
 go()
