@@ -54,7 +54,7 @@ async function getUsernames() {
     return usernames.split('\n')
 }
 import { sleep } from './utils'
-function createAccount(browser: Browser, username?, p?): Promise<void | null | { success?: boolean, username?: string, password?: string, info?: string, error?:any, }> {
+function createAccount(browser: Browser, username?, p?): Promise<void | null | { success?: boolean, username?: string, password?: string, info?: string, error?: any, }> {
     let inputtedUsername = username;
     let generate = false;
     if (!username) generate = true
@@ -62,7 +62,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
     return new Promise(async res => {
 
         try {
-            browser.on('close', () => { res({info:'browser closed'}) })
+            browser.on('close', () => { res({ info: 'browser closed' }) })
 
             // let page = (await browser.pages())[0]
             let page = await browser.newPage()
@@ -74,26 +74,31 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
             page.setDefaultNavigationTimeout(1000 * 40)
             page.setDefaultTimeout(1000 * 120)
 
+            console.log('loading page')
+
             let navPromise = page.waitForNavigation({ waitUntil: 'load', timeout: 1000 * 39 })
             await page.goto('https://scratch.mit.edu/join')
             await navPromise
 
+            console.log('page loaded!')
 
             if (!p) p = args.password;
 
+            console.log('inputting fields, waiting for password')
 
             await page.waitForSelector('#password')
             await page.type('#password', p)
             await page.type('#passwordConfirm', p)
 
+            console.log('inputted password')
 
             let total = 0
             while (true) { // loop in case username exists
-                if (total > 10) { res({info:'username recreate loop'}); return; }
+                if (total > 10) { res({ info: 'username recreate loop' }); return; }
                 total++;
                 console.log('creating new username')
                 if (generate) {
-                    console.log('yes making new')
+                    console.log('yes making new', total)
                     inputtedUsername = args.createUsername();
                     console.log(inputtedUsername)
                 }
@@ -116,6 +121,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                     await page.keyboard.press('Backspace');
                 }
 
+                console.log('that didnt work, making new')
                 await sleep(500)
 
 
@@ -145,10 +151,14 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
             await page.waitForSelector('#email')
             await page.type('#email', args.email)
 
+            console.log('done. waiting for submit button')
+
             await sleep(100)
             await page.waitForSelector('[type="submit"][content="Create Your Account"]:has(.next-step-title)')
             // console.log('found')
             await page.click('[type="submit"]');
+
+            console.log('clicked, waiting for google')
 
             await Promise.all([(
                 (async () => {
@@ -237,15 +247,15 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                         //     }
                         // }
 
-                    } catch (e) { 
+                    } catch (e) {
                         // console.error(e)
-                     }
+                    }
                 })())])
 
-            res({info:'timed out waiting for captcha to appear and solve'});
+            res({ info: 'timed out waiting for captcha to appear and solve' });
         } catch (e) {
             // console.error(e);
-            res({error:e});
+            res({ error: e });
         }
     })
 }
@@ -255,10 +265,10 @@ async function createAccountAndStoreCredentials(browser, username?, p?) {
     console.log('result was:', res)
     if (res?.success) {
         totalCreated++;
-        if(!res.username || !res.password) return;
+        if (!res.username || !res.password) return;
         await storeDeets(res.username, res.password)
     }
-    console.log('total created:',totalCreated)
+    console.log('total created:', totalCreated)
     return res;
 
 }
@@ -364,18 +374,18 @@ async function doItWithProxy(proxyUrl) {
 
         browser.close();
     }
-   
+
 
 }
 
-const TOTAL_BROWSERS_AT_ONCE = 4;
+const TOTAL_BROWSERS_AT_ONCE = 2;
 let totalNumberOfBrowsersOpen = 0;
 async function go() {
 
     while (true) {
         console.log('waiting', totalNumberOfBrowsersOpen)
 
-        while(totalNumberOfBrowsersOpen>=TOTAL_BROWSERS_AT_ONCE) {await sleep(1000)}
+        while (totalNumberOfBrowsersOpen >= TOTAL_BROWSERS_AT_ONCE) { await sleep(1000) }
 
         console.log('starting up', totalNumberOfBrowsersOpen)
 
@@ -398,7 +408,7 @@ process.on('uncaughtException', function (err) {
 process.stdin.resume(); // so the program will not close instantly
 
 
-import {spawn} from 'child_process'
+import { spawn } from 'child_process'
 async function exitHandler(options, exitCode) {
     if (options.cleanup) {
         console.log('killing chromium instances and waiting 5 seconds...');
@@ -406,20 +416,20 @@ async function exitHandler(options, exitCode) {
         await sleep(1000 * 5);
         console.log('done waiting')
     }
-    
+
     if (exitCode || exitCode === 0) console.log(exitCode);
     if (options.exit) process.exit();
 }
 
 // do something when app is closing
-process.on('exit', exitHandler.bind(null,{cleanup:true}));
+process.on('exit', exitHandler.bind(null, { cleanup: true }));
 
 // catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, {exit:true, cleanup:true}));
+process.on('SIGINT', exitHandler.bind(null, { exit: true, cleanup: true }));
 
 // catches "kill pid" (for example: nodemon restart)
-process.on('SIGUSR1', exitHandler.bind(null, {exit:true, cleanup:true}));
-process.on('SIGUSR2', exitHandler.bind(null, {exit:true, cleanup:true}));
+process.on('SIGUSR1', exitHandler.bind(null, { exit: true, cleanup: true }));
+process.on('SIGUSR2', exitHandler.bind(null, { exit: true, cleanup: true }));
 
 // catches uncaught exceptions
 

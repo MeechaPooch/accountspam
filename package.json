@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start":"tsx main.ts"
+    "start":"tsx main.ts; pkill chromium"
   },
   "keywords": [],
   "author": "",
