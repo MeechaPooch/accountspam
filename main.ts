@@ -21,8 +21,11 @@ import fs from 'fs/promises'
 import { getTextFromAudio, solve } from './solver';
 import { Browser, HTTPRequest, ResponseForRequest } from 'puppeteer';
 import Rotator from './ProxyRotater';
+import { HttpProxyAgent } from 'http-proxy-agent';
+import fetch from 'node-fetch'
 
-let usernames = await getUsernames()
+
+let usernames = await getUsernames();
 let overrides: Map<string, Partial<ResponseForRequest>> = new Map();
 
 import {
@@ -32,9 +35,12 @@ import {
 
 const args = {
     email: 'bigblackkittenslimy@gmail.com',
-    password: 'jfoiwljf2sdFJ9',
+    createPassword() {
+        return Math.random().toString(36).slice(2)
+    },
     createUsername() {
-        return `${usernames[Math.floor(Math.random() * usernames.length)]}1`
+        // return `${usernames[Math.floor(Math.random() * usernames.length)]}${Math.random().toString().slice(2, 5)}`
+        return `haiku${this.createPassword().slice(-5)}`
     },
 }
 
@@ -139,6 +145,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
             // page.bringToFront();
 
 
+            // filter certain requests not through the proxy!
             await page.setRequestInterception(true);
             page.on('request', async interceptedRequest => {
                 // console.log(interceptedRequest.url())
@@ -148,6 +155,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                     // || interceptedRequest.url().includes('recaptcha__en.js')
                     || (interceptedRequest.url().includes('www.googletagmanager.com') && interceptedRequest.method().toLowerCase() == 'get')
                     || interceptedRequest.url().includes('www.recaptcha.net/recaptcha/api.js')
+                    || interceptedRequest.url().includes('api.scratch.mit.edu/accounts/checkusername')
                     // || interceptedRequest.url().includes('www.google.com/js/')
                     // || interceptedRequest.url().includes('www.recaptcha.net/recaptcha/api2')
                     // || interceptedRequest.url().includes('www.googletagmanager.com')
@@ -160,7 +168,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
                 } else
 
-                    if (overrides.has(interceptedRequest.url())) {
+                    if (overrides.has(interceptedRequest.url() && interceptedRequest.method().toLowerCase() == 'get')) {
 
                         interceptedRequest.respond(overrides.get(interceptedRequest.url())!);
                     } else if (
@@ -207,7 +215,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
             console.log('page loaded!')
 
-            if (!p) p = args.password;
+            if (!p) p = args.createPassword();
 
             console.log('inputting fields, waiting for password')
 
@@ -426,7 +434,7 @@ async function startEmailResponding() {
 
 let pr = new Rotator();
 
-async function doCreates(browser: Browser) {
+async function doCreates(browser: Browser, proxyUrl:string) {
 
     // let answer = await createAccountAndStoreCredentials();
     // if (answer?.success) {
@@ -459,19 +467,19 @@ async function doCreates(browser: Browser) {
                         } else {
                             if (resp?.info == 'googleknows') {
                                 googleKnowsInRow++;
-                                errorCountInRowNonGoogle++;
+                                errorCountInRowNonGoogle--;
                             } else if (resp?.info == 'captchaload') {
                                 callitoff = true;
-                                errorCountInRowNonGoogle++;
                             } else if (resp?.info == 'username recreate loop') {
-                                callitoff = true;
-                                console.log('calling it off because couldnt connect')
+                                // callitoff = true;
+                                console.log('username recreate loop for',proxyUrl)
                             } else {
                                 console.log('non google error')
                                 // callitoff = true;
                                 errorCountInRowNonGoogle++;
                             }
                             errorCount++;
+                            errorCountInRowNonGoogle++;
                         }
 
                     } catch (e) {
@@ -500,13 +508,52 @@ async function doItWithProxy(proxyUrl) {
 
         console.log('initting browser')
         browser = await newBrowser(proxyUrl);
-        if(!browser) {totalNumberOfBrowsersOpen--; return;}
+        if (!browser) { totalNumberOfBrowsersOpen--; return; }
         console.log('browser initted')
-        await doCreates(browser)
-        console.log('DONE creating')
+        await Promise.race([
+            doCreates(browser,proxyUrl),
+            // test proxy can connect
+            new Promise(async res => {
+                try {
+                    const agent = new HttpProxyAgent(proxyUrl);
+                    // different proxy test urls
+                    let response = await fetch('https://api.scratch.mit.edu/accounts/checkusername/testtset/', { agent });
+                    // let response = await fetch('https://scratch.mit.edu/join', { agent });
+                    // let response = await fetch("https://api.scratch.mit.edu/accounts/checkpassword", {
+                    //     agent,
+                    //     "headers": {
+                    //       "accept": "application/json",
+                    //       "accept-language": "en-US,en;q=0.9",
+                    //       "content-type": "application/json",
+                    //       "priority": "u=1, i",
+                    //       "sec-ch-ua": "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"",
+                    //       "sec-ch-ua-mobile": "?0",
+                    //       "sec-ch-ua-platform": "\"macOS\"",
+                    //       "sec-fetch-dest": "empty",
+                    //       "sec-fetch-mode": "cors",
+                    //       "sec-fetch-site": "same-site",
+                    //       "Referer": "https://scratch.mit.edu/",
+                    //       "Referrer-Policy": "strict-origin-when-cross-origin"
+                    //     },
+                    //     "body": "{\"password\":\"testtesttest\"}",
+                    //     "method": "POST"
+                    //   });
+                    console.log('response status',response.status,proxyUrl)
+                    if([501,].includes(response.status)) {
+                        console.log('destroying proxy with status '+response.status);
+                        res({youreDone:true})
+                    }
+                } catch (e) {
+                    console.log('BIG ERROR!, proxy couldnt connect. Destorying browser');
+                    console.error(e);
+                    res({youreDone:true})
+                }
+            })
+        ])
+        console.log('destroying browser after finish or proxy error')
 
     } catch (e) {
-        console.log('ERROR')
+        console.log('ERROR THAT CAUSED BROWSER TO STOP LOOPING')
         console.error(e)
         totalNumberOfBrowsersOpen--;
 
@@ -557,6 +604,7 @@ import { spawn } from 'child_process'
 import { error } from 'console';
 async function exitHandler(options, exitCode) {
     if (options.cleanup) {
+        console.log('total created:',totalCreated)
         console.log('killing chromium instances and waiting 5 seconds...');
         spawn('pkill chromium');
         await sleep(1000 * 5);
