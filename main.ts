@@ -69,6 +69,20 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
             await page.setUserAgent(userAgent.random().toString())
             page.bringToFront();
 
+
+            await page.setRequestInterception(true);
+            page.on('request', interceptedRequest => {
+                console.log(interceptedRequest.url())
+                if (interceptedRequest.url() === 'https://www.google.com/file.js') {
+                    interceptedRequest.respond({
+                        body: data
+                    });
+                } else {
+                    interceptedRequest.continue();
+                }
+            });
+
+
             // await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36')
 
             page.setDefaultNavigationTimeout(1000 * 40)
