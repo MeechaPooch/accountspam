@@ -1,7 +1,7 @@
 const CONF = {
-    MAX_BROWSERS_AT_ONCE: 5,
+    MAX_BROWSERS_AT_ONCE: 3,
     NEW_TAB_INTERVAL:8 * 1000,
-    MAX_TABS: 10,
+    MAX_TABS: 4,
 
     HEADLESS: true,
 
@@ -51,7 +51,18 @@ async function newBrowser(proxyUrl) {
             '--disable-web-security',
             '--enable-automation',
             '--disable-features=IsolateOrigins,site-per-process,SitePerProcess',
-            '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',],
+            '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',
+        
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-session-crashed-bubble',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--noerrdialogs',
+            '--disable-gpu'
+        ],
         // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', 
         // executablePath: '/usr/bin/chromium',
         headless: CONF.HEADLESS, timeout: 0,
