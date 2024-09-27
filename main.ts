@@ -57,7 +57,7 @@ import { sleep } from './utils'
 function createAccount(browser: Browser, username?, p?): Promise<void | null | { success?: boolean, username?: string, password?: string, info?: string, error?: any, }> {
     let inputtedUsername = username;
     let generate = false;
-    if (!username) generate = true
+    if (!username) generate = true;
 
     return new Promise(async res => {
 
@@ -71,14 +71,15 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
 
             await page.setRequestInterception(true);
-            page.on('request', interceptedRequest => {
+            page.on('request', async interceptedRequest => {
                 console.log(interceptedRequest.url())
                 if (interceptedRequest.url() === 'https://www.google.com/file.js') {
                     interceptedRequest.respond({
-                        body: data
+                        body: ""
                     });
                 } else {
-                    interceptedRequest.continue();
+                    let ans = await interceptedRequest.continue();
+                    // console.log(ans)
                 }
             });
 
@@ -381,12 +382,16 @@ async function doItWithProxy(proxyUrl) {
         console.log('ERROR')
         console.error(e)
         totalNumberOfBrowsersOpen--;
-        browser.close();
+        
+        await browser.close();
+        browser.process()?.kill()
         return;
     } finally {
         totalNumberOfBrowsersOpen--;
 
-        browser.close();
+        await browser.close();
+        browser.process()?.kill()
+
     }
 
 
