@@ -1,7 +1,7 @@
 const CONF = {
     MAX_BROWSERS_AT_ONCE: 10,
     // IN SECS
-    NEW_TAB_INTERVAL:8,
+    NEW_TAB_INTERVAL:8 * 1000,
     MAX_TABS: 10000,
 
     HEADLESS: true,
