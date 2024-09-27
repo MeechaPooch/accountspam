@@ -195,3 +195,21 @@ export function solve() {
         }
     }, 5000);
 }
+
+export async function getTextFromAudio(URL) {
+    console.log('going')
+    URL  = 'https://recaptcha.net/sdfksdflsdjk'
+    await import("https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js")
+
+    var url = "https://engageub1.pythonanywhere.com";
+
+    axios({
+        method: "POST",
+        url: url,
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        data: "input=" + encodeURIComponent(URL) + "&lang=" + 'null',
+        timeout: 60000,
+    })
+}

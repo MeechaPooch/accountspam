@@ -231,6 +231,3 @@ export async function emailLoop() {
     }
   }
 }
-
-
-emailLoop()

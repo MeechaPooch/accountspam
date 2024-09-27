@@ -1,15 +1,3 @@
-const CONF = {
-    MAX_BROWSERS_AT_ONCE: 10,
-    // IN SECS
-    NEW_TAB_INTERVAL:8,
-    MAX_TABS: 10000,
-
-    HEADLESS: true,
-
-    MAX_ERRORS_IN_ROW_NON_GOOGLE: 5,
-    MAX_GOOGLE_KNOWS_IN_ROW: 3,
-}
-
 console.log('test')
 
 let totalCreated = 0;
@@ -19,9 +7,9 @@ import userAgent from 'user-agents'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 import fs from 'fs/promises'
-import { getTextFromAudio, solve } from './solver';
+import { getTextFromAudio, solve } from './solver.js';
 import { Browser, HTTPRequest, ResponseForRequest } from 'puppeteer';
-import Rotator from './ProxyRotater';
+// import Rotator from './ProxyRotater.ts';
 
 let usernames = await getUsernames()
 let overrides: Map<string, Partial<ResponseForRequest>> = new Map();
@@ -55,10 +43,10 @@ async function newBrowser(proxyUrl) {
             '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',],
         // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', 
         // executablePath: '/usr/bin/chromium',
-        headless: CONF.HEADLESS, timeout: 0,
+        headless: false, timeout: 0,
         waitForInitialPage: true,
         defaultViewport: { width: 800 + Math.round(Math.random() * 100), height: 600 + Math.round(Math.random() * 100), isMobile: true },
-        // devtools: true,
+        devtools: true,
     });
 
 }
@@ -71,15 +59,16 @@ async function getUsernames() {
 async function fetchInterceptedRequest(interceptedRequest: HTTPRequest) {
     if(interceptedRequest.url().includes('engageub')) {
         console.log('YIPPEEE IM A BIG GREEN LEPRACHAUN!!!');
-        // console.log(interceptedRequest,interceptedRequest.hasPostData(),interceptedRequest.postData(),)
+        console.log(interceptedRequest,interceptedRequest.hasPostData(),interceptedRequest.postData(),)
     }
     let fetchOptions: RequestInit = {
         headers: interceptedRequest.headers(),
         method: interceptedRequest.method(),
     }
     if (interceptedRequest.hasPostData()) fetchOptions.body = interceptedRequest.postData(); // todo make be proxy instead
-    // console.log('fetching with options', fetchOptions)
+    console.log('fetching with options', fetchOptions)
     let response = await fetch(interceptedRequest.url(), fetchOptions)
+    console.log(response)
 
     if (response.ok) {
         // console.log('overriding success');
@@ -92,7 +81,7 @@ async function fetchInterceptedRequest(interceptedRequest: HTTPRequest) {
         // console.log(response);
 
         if (responseObj) {
-            // console.log('running direct ' + interceptedRequest.url())
+            console.log('overriding ' + interceptedRequest.url())
             interceptedRequest.respond(responseObj)
         } else {
             interceptedRequest.continue();
@@ -105,7 +94,7 @@ async function fetchInterceptedRequest(interceptedRequest: HTTPRequest) {
     }
 }
 
-import { sleep, streamToBuffer, streamToString } from './utils'
+import { sleep, streamToBuffer, streamToString } from './utils.ts'
 function createAccount(browser: Browser, username?, p?): Promise<void | null | { success?: boolean, username?: string, password?: string, info?: string, error?: any, }> {
     let inputtedUsername = username;
     let generate = false;
@@ -126,7 +115,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
             await page.setRequestInterception(true);
             page.on('request', async interceptedRequest => {
-                // console.log(interceptedRequest.url())
+                console.log(interceptedRequest.url())
                 // handle ones that you want to proxy through vanilla network
                 if (
                     interceptedRequest.url().includes('engageub')
@@ -172,7 +161,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
 
 
                         let response = interceptedRequest.responseForRequest()
-                        // console.log(response)
+                        console.log(response)
                     }
             });
 
@@ -290,7 +279,6 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                                 let item = await (await (await page.waitForSelector('iframe[src*="api2/bframe"]'))?.contentFrame())?.waitForSelector('.rc-doscaptcha-body-text');
                                 // when error element shows up, say so
                                 res({ success: false, username: inputtedUsername, password: p, info: 'googleknows' })
-                                page.close();
                             })();
                         }
 
@@ -402,10 +390,15 @@ function storeDeets(u: string, p: string) {
 // app with interface where people can select folders to pull from and then ask the ai to complete a certain task
 import { emailLoop } from './email/emailServer.ts'
 async function startEmailResponding() {
-    emailLoop();
+    // emailLoop();
 }
 
-let pr = new Rotator();
+// let pr = new Rotator();
+
+const INTERVAL = 1000 * 8;
+const MAX_TABS = 2;
+const MAX_ERRORS_IN_ROW_NON_GOOGLE = 5;
+const MAX_GOOGLE_KNOWS_IN_ROW = 3;
 
 async function doCreates(browser: Browser) {
 
@@ -421,11 +414,11 @@ async function doCreates(browser: Browser) {
         let googleKnowsInRow = 0;
         let numTabs = 0
         while (true) {
-            if (callitoff || errorCountInRowNonGoogle > CONF.MAX_ERRORS_IN_ROW_NON_GOOGLE || googleKnowsInRow >= CONF.MAX_GOOGLE_KNOWS_IN_ROW) break;
-            await sleep(CONF.NEW_TAB_INTERVAL);
-            while (numTabs >= CONF.MAX_TABS) { await sleep(100) }
+            if (callitoff || errorCountInRowNonGoogle > MAX_ERRORS_IN_ROW_NON_GOOGLE || googleKnowsInRow >= MAX_GOOGLE_KNOWS_IN_ROW) break;
+            await sleep(INTERVAL);
+            while (numTabs >= MAX_TABS) { await sleep(100) }
             console.log('sleep over')
-            if (callitoff || errorCountInRowNonGoogle > CONF.MAX_ERRORS_IN_ROW_NON_GOOGLE || googleKnowsInRow >= CONF.MAX_GOOGLE_KNOWS_IN_ROW) break;
+            if (callitoff || errorCountInRowNonGoogle > MAX_ERRORS_IN_ROW_NON_GOOGLE || googleKnowsInRow >= MAX_GOOGLE_KNOWS_IN_ROW) break;
             numTabs++;
 
             {
@@ -504,13 +497,14 @@ async function doItWithProxy(proxyUrl) {
 
 }
 
+const TOTAL_BROWSERS_AT_ONCE = 1;
 let totalNumberOfBrowsersOpen = 0;
 async function go() {
 
     while (true) {
         console.log('waiting', totalNumberOfBrowsersOpen)
 
-        while (totalNumberOfBrowsersOpen >= CONF.MAX_BROWSERS_AT_ONCE) { await sleep(1000) }
+        while (totalNumberOfBrowsersOpen >= TOTAL_BROWSERS_AT_ONCE) { await sleep(1000) }
 
         console.log('starting up', totalNumberOfBrowsersOpen)
 
@@ -558,5 +552,83 @@ process.on('SIGUSR1', exitHandler.bind(null, { exit: true, cleanup: true }));
 process.on('SIGUSR2', exitHandler.bind(null, { exit: true, cleanup: true }));
 
 // catches uncaught exceptions
-startEmailResponding();
-go();
+
+// go();
+
+
+let browser = await newBrowser('http://193.138.178.6:8282');
+let page = await browser.newPage()
+await page.setUserAgent(userAgent.random().toString())
+
+
+// page.bringToFront();
+
+
+await page.setRequestInterception(true);
+page.on('request', async interceptedRequest => {
+    console.log(interceptedRequest.url())
+    // handle ones that you want to proxy through vanilla network
+    if (
+        interceptedRequest.url().includes('engageub')
+        // || interceptedRequest.url().includes('recaptcha__en.js')
+        || (interceptedRequest.url().includes('www.googletagmanager.com') && interceptedRequest.method().toLowerCase()=='get')
+        || interceptedRequest.url().includes('www.recaptcha.net/recaptcha/api.js')
+        // || interceptedRequest.url().includes('www.google.com/js/')
+        // || interceptedRequest.url().includes('www.recaptcha.net/recaptcha/api2')
+        // || interceptedRequest.url().includes('www.googletagmanager.com')
+        // || interceptedRequest.url().includes('www.googletagmanager.com')
+        // || interceptedRequest.url().includes('www.googletagmanager.com/gtag')
+        // || interceptedRequest.url().includes('www.googletagmanager.com/gtm')
+    ) {
+
+        let result = await fetchInterceptedRequest(interceptedRequest);
+
+    } else
+
+        if (overrides.has(interceptedRequest.url())) {
+
+            interceptedRequest.respond(overrides.get(interceptedRequest.url())!);
+        } else if (
+            (
+                (interceptedRequest.url().includes('scratch.mit.edu') && new URL(interceptedRequest.url()).pathname.slice(-5).includes('.'))
+                || interceptedRequest.url() == ('https://scratch.mit.edu/join')
+                || interceptedRequest.url().includes('scratch.mit.edu/session')
+                || interceptedRequest.url().includes('gstatic.com')
+                // || interceptedRequest.url().includes('engageub.pythonanywhere.com')
+            )
+            && interceptedRequest.method().toLowerCase() == 'get'
+        ) { // test if is filename 
+            let responseObj = await fetchInterceptedRequest(interceptedRequest);
+            if (responseObj) {
+                overrides.set(interceptedRequest.url(), responseObj); // test types
+                return;
+            } else {
+                console.log('whomp whomp')
+            }
+        } else {
+            // interceptedRequest.
+            interceptedRequest.continue();
+            // await sleep(1000)
+
+
+            let response = interceptedRequest.responseForRequest()
+            console.log(response)
+        }
+});
+
+
+
+
+
+
+
+
+
+
+await page.goto('https://www.google.com/recaptcha/api2/demo');
+
+// await page.waitForNavigation();
+// await page.waitForNetworkIdle();
+await sleep(7*1000)
+console.log('solving')
+await page.evaluate(solve);
