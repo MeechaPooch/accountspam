@@ -1,7 +1,7 @@
 const CONF = {
-    MAX_BROWSERS_AT_ONCE: 10,
+    MAX_BROWSERS_AT_ONCE: 5,
     NEW_TAB_INTERVAL:8 * 1000,
-    MAX_TABS: 10000,
+    MAX_TABS: 10,
 
     HEADLESS: true,
 
@@ -289,7 +289,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                                 let item = await (await (await page.waitForSelector('iframe[src*="api2/bframe"]'))?.contentFrame())?.waitForSelector('.rc-doscaptcha-body-text');
                                 // when error element shows up, say so
                                 res({ success: false, username: inputtedUsername, password: p, info: 'googleknows' })
-                                page.close();
+                                // page.close();
                             })();
                         }
 
@@ -328,11 +328,13 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                         if ((await page.waitForSelector('.welcome-step-image'))) {
                             console.log('success!!')
                             res({ success: true, username: inputtedUsername, password: p })
-                            page.close();
+                            console.log('PAGE CLOSING SUCCESS')
+                            try{page.close();}catch(e){}
                         } else {
                             console.log('so close, no success')
                             res({ success: false, username: inputtedUsername, password: p })
-                            page.close();
+                            console.log('PAGE CLOSING NEAR SUCCESS')
+                            try{page.close();}catch(e){}
                         }
 
                         // await sleep(1000 * 1000)
@@ -359,13 +361,15 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                         // }
 
                     } catch (e) {
-                        // console.error(e)
-                        page.close();
+                        console.error(e)
+                        console.log('PAGE CLOSING FROM ERROR')
+                        try{page.close();}catch(e){}
                     }
                 })())])
 
             res({ info: 'timed out waiting for captcha to appear and solve' });
-            page.close();
+            console.log('PAGE CLOSING CAPTCHA TIMEOUT')
+            try{page.close();}catch(e){}
         } catch (e) {
             // console.error(e);
             res({ error: e });
@@ -525,7 +529,7 @@ async function go() {
 }
 
 process.on('uncaughtException', function (err) {
-    console.error(err);
+    // console.error(err);
     // console.log("Node NOT Exiting...");
 });
 
