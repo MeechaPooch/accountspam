@@ -5,7 +5,7 @@ let totalCreated = 0;
 import puppeteer from 'puppeteer-extra'
 import userAgent from 'user-agents'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-puppeteer.use(StealthPlugin())
+
 import fs from 'fs/promises'
 import { solve } from './solver';
 import { Browser } from 'puppeteer';
@@ -27,7 +27,7 @@ const args = {
 }
 
 
-
+puppeteer.use(StealthPlugin())
 async function newBrowser(proxyUrl) {
     return await puppeteer.launch({
         args: [

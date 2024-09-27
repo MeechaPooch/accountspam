@@ -1,5 +1,3 @@
-import * as cheerio from 'cheerio';
-import request from 'request'
 
 export async function getProxyList(): Promise<string[]> {
     let res1 = await fetch('https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt');
@@ -14,34 +12,34 @@ export async function getProxyList(): Promise<string[]> {
 
 }
 
-console.log(await getProxyList())
+// console.log(await getProxyList())
 
-export function getProxyList1(): Promise<string[]> {
-    let ip_addresses: string[] = [];
-    let port_numbers: string[] = [];
+// export function getProxyList1(): Promise<string[]> {
+//     let ip_addresses: string[] = [];
+//     let port_numbers: string[] = [];
 
-    return new Promise(res => {
-        request("https://sslproxies.org/", function (error, response, html) {
-            if (!error && response.statusCode == 200) {
-                const $ = cheerio.load(html);
+//     return new Promise(res => {
+//         request("https://sslproxies.org/", function (error, response, html) {
+//             if (!error && response.statusCode == 200) {
+//                 const $ = cheerio.load(html);
 
-                $("td:nth-child(1)").each(function (index, value) {
-                    ip_addresses[index] = $(this).text();
-                });
+//                 $("td:nth-child(1)").each(function (index, value) {
+//                     ip_addresses[index] = $(this).text();
+//                 });
 
-                $("td:nth-child(2)").each(function (index, value) {
-                    port_numbers[index] = $(this).text();
-                });
-            } else {
-                console.log("Error loading proxy, please try again");
-            }
+//                 $("td:nth-child(2)").each(function (index, value) {
+//                     port_numbers[index] = $(this).text();
+//                 });
+//             } else {
+//                 console.log("Error loading proxy, please try again");
+//             }
 
-            ip_addresses.join(", ");
-            port_numbers.join(", ");
+//             ip_addresses.join(", ");
+//             port_numbers.join(", ");
 
 
-            res(ip_addresses.map((addr, index) => `${addr}:${port_numbers[index]}`))
+//             res(ip_addresses.map((addr, index) => `${addr}:${port_numbers[index]}`))
 
-        });
-    });
-}
+//         });
+//     });
+// }
