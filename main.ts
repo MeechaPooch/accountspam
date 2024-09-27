@@ -1,6 +1,6 @@
 const CONF = {
     MAX_BROWSERS_AT_ONCE: 3,
-    NEW_TAB_INTERVAL:8 * 1000,
+    NEW_TAB_INTERVAL: 8 * 1000,
     MAX_TABS: 4,
 
     HEADLESS: true,
@@ -41,36 +41,41 @@ const args = {
 
 puppeteer.use(StealthPlugin())
 async function newBrowser(proxyUrl) {
-    return await puppeteer.launch({
-        args: [
-            `--proxy-server=${proxyUrl}`,
-            // '--proxy-server=socks5://127.0.0.1:9050',
-            '--no-sandbox', '--allow-external-pages',
-            '--allow-third-party-modules',
-            '--data-reduction-proxy-http-proxies',
-            '--disable-web-security',
-            '--enable-automation',
-            '--disable-features=IsolateOrigins,site-per-process,SitePerProcess',
-            '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',
-        
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-session-crashed-bubble',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--noerrdialogs',
-            '--disable-gpu'
-        ],
-        // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', 
-        // executablePath: '/usr/bin/chromium',
-        headless: CONF.HEADLESS, timeout: 0,
-        waitForInitialPage: true,
-        defaultViewport: { width: 800 + Math.round(Math.random() * 100), height: 600 + Math.round(Math.random() * 100), isMobile: true },
-        // devtools: true,
-    });
+    try {
+        return await puppeteer.launch({
+            args: [
+                `--proxy-server=${proxyUrl}`,
+                // '--proxy-server=socks5://127.0.0.1:9050',
+                '--no-sandbox', '--allow-external-pages',
+                '--allow-third-party-modules',
+                '--data-reduction-proxy-http-proxies',
+                '--disable-web-security',
+                '--enable-automation',
+                '--disable-features=IsolateOrigins,site-per-process,SitePerProcess',
+                '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end', '--disable-features=IsolateOrigins,site-per-process',
 
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-session-crashed-bubble',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--noerrdialogs',
+                '--disable-gpu'
+            ],
+            // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', 
+            // executablePath: '/usr/bin/chromium',
+            headless: CONF.HEADLESS, timeout: 0,
+            waitForInitialPage: true,
+            defaultViewport: { width: 800 + Math.round(Math.random() * 100), height: 600 + Math.round(Math.random() * 100), isMobile: true },
+            // devtools: true,
+        });
+
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
 }
 
 async function getUsernames() {
@@ -79,7 +84,7 @@ async function getUsernames() {
 }
 
 async function fetchInterceptedRequest(interceptedRequest: HTTPRequest) {
-    if(interceptedRequest.url().includes('engageub')) {
+    if (interceptedRequest.url().includes('engageub')) {
         console.log('YIPPEEE IM A BIG GREEN LEPRACHAUN!!!');
         // console.log(interceptedRequest,interceptedRequest.hasPostData(),interceptedRequest.postData(),)
     }
@@ -141,7 +146,7 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                 if (
                     interceptedRequest.url().includes('engageub')
                     // || interceptedRequest.url().includes('recaptcha__en.js')
-                    || (interceptedRequest.url().includes('www.googletagmanager.com') && interceptedRequest.method().toLowerCase()=='get')
+                    || (interceptedRequest.url().includes('www.googletagmanager.com') && interceptedRequest.method().toLowerCase() == 'get')
                     || interceptedRequest.url().includes('www.recaptcha.net/recaptcha/api.js')
                     // || interceptedRequest.url().includes('www.google.com/js/')
                     // || interceptedRequest.url().includes('www.recaptcha.net/recaptcha/api2')
@@ -340,12 +345,12 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                             console.log('success!!')
                             res({ success: true, username: inputtedUsername, password: p })
                             console.log('PAGE CLOSING SUCCESS')
-                            try{page.close();}catch(e){}
+                            try { page.close(); } catch (e) { }
                         } else {
                             console.log('so close, no success')
                             res({ success: false, username: inputtedUsername, password: p })
                             console.log('PAGE CLOSING NEAR SUCCESS')
-                            try{page.close();}catch(e){}
+                            try { page.close(); } catch (e) { }
                         }
 
                         // await sleep(1000 * 1000)
@@ -374,13 +379,13 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                     } catch (e) {
                         console.error(e)
                         console.log('PAGE CLOSING FROM ERROR')
-                        try{page.close();}catch(e){}
+                        try { page.close(); } catch (e) { }
                     }
                 })())])
 
             res({ info: 'timed out waiting for captcha to appear and solve' });
             console.log('PAGE CLOSING CAPTCHA TIMEOUT')
-            try{page.close();}catch(e){}
+            try { page.close(); } catch (e) { }
         } catch (e) {
             // console.error(e);
             res({ error: e });
@@ -495,6 +500,7 @@ async function doItWithProxy(proxyUrl) {
 
         console.log('initting browser')
         browser = await newBrowser(proxyUrl);
+        if(!browser) {totalNumberOfBrowsersOpen--; return;}
         console.log('browser initted')
         await doCreates(browser)
         console.log('DONE creating')
