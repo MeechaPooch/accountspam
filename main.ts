@@ -78,8 +78,9 @@ function createAccount(browser: Browser, username?, p?): Promise<void | null | {
                         body: ""
                     });
                 } else {
-                    let ans = await interceptedRequest.continue();
-                    // console.log(ans)
+                    await interceptedRequest.continue();
+                    let response = interceptedRequest.response()
+                    console.log(response)
                 }
             });
 
